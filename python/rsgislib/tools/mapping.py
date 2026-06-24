@@ -54,7 +54,7 @@ def define_axis_extent(ax: plt.axis, bbox: List[float]):
     :param bbox: a bbox (MinX, MaxX, MinY, MaxY) to define the region of interest.
 
     """
-    ax.set_aspect("equal", "box")
+    ax.set_aspect("equal", adjustable="datalim")
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
     ax.ticklabel_format(useOffset=False, style="plain")
@@ -293,6 +293,7 @@ def create_wmts_img_map(
     ax.imshow(img_data, extent=img_coords)
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
+    ax.set_aspect("equal", adjustable="datalim")
 
     if use_grid:
         ax.grid()
@@ -477,6 +478,7 @@ def create_vec_lyr_map(
     use_grid: bool = False,
     show_map_axis: bool = True,
     sub_in_vec: bool = False,
+    clip_vec_bbox: bool = True,
     scale_bar_loc: str = "upper right",
     plot_zorders: Union[float, List[float]] = 1,
 ):
@@ -515,6 +517,8 @@ def create_vec_lyr_map(
                        spatially subset before displaying as for large vector
                        layers this can make the processing much faster.
                        Default: False
+    :param clip_vec_bbox: boolean specifying whether a bbox should be clipped to a
+                          polygon defined by the bbox. Default: True
     :param scale_bar_loc: the location on the plot of the scale bar. Options defined
                           by the matplotlib-scalebar module. But must be one of:
                           upper right, upper left, lower left, lower right, right,
@@ -533,6 +537,20 @@ def create_vec_lyr_map(
         # Create list of one
         gp_vecs = [gp_vecs]
 
+    if clip_vec_bbox:
+        import shapely.geometry
+
+        bbox_poly = shapely.geometry.box(
+            min(bbox[0], bbox[1]),  # min_x
+            min(bbox[2], bbox[3]),  # min_y
+            max(bbox[0], bbox[1]),  # max_x
+            max(bbox[2], bbox[3]),  # max_y
+        )
+
+        clip_poly_gdf = geopandas.GeoDataFrame(
+            [1], geometry=[bbox_poly], crs=gp_vecs[0].crs
+        )
+
     for i, gp_vec in enumerate(gp_vecs):
         if sub_in_vec:
             min_x_sub = math.floor(bbox[0] - 4)
@@ -542,6 +560,9 @@ def create_vec_lyr_map(
             gp_vec_sub = gp_vec.cx[min_x_sub:max_x_sub, min_y_sub:max_y_sub]
         else:
             gp_vec_sub = gp_vec
+
+        if clip_vec_bbox:
+            gp_vec_sub = gp_vec_sub.clip(clip_poly_gdf)
 
         if isinstance(vec_fill_clrs, list):
             if len(vec_fill_clrs) != n_vec_lyrs:
@@ -599,6 +620,7 @@ def create_vec_lyr_map(
         )
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
+    ax.set_aspect("equal", adjustable="datalim")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -739,6 +761,7 @@ def create_raster_img_map(
     )
     ax.set_xlim([img_coords[0], img_coords[1]])
     ax.set_ylim([img_coords[2], img_coords[3]])
+    ax.set_aspect("equal", adjustable="datalim")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -852,6 +875,7 @@ def create_thematic_raster_map(
 
     ax.set_xlim([img_coords_scns[0][0], img_coords_scns[0][1]])
     ax.set_ylim([img_coords_scns[0][2], img_coords_scns[0][3]])
+    ax.set_aspect("equal", adjustable="datalim")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     for img_data_arr, img_coords, plot_zorder in zip(
@@ -895,6 +919,7 @@ def create_choropleth_vec_lyr_map(
     use_grid: bool = False,
     show_map_axis: bool = True,
     sub_in_vec: bool = False,
+    clip_vec_bbox: bool = True,
     scale_bar_loc: str = "upper right",
     plot_zorder: float = 1,
 ):
@@ -934,6 +959,8 @@ def create_choropleth_vec_lyr_map(
                        spatially subset before displaying as for large vector
                        layers this can make the processing much faster.
                        Default: False
+    :param clip_vec_bbox: boolean specifying whether a bbox should be clipped to a
+                          polygon defined by the bbox. Default: True
     :param scale_bar_loc: the location on the plot of the scale bar. Options defined
                           by the matplotlib-scalebar module. But must be one of:
                           upper right, upper left, lower left, lower right, right,
@@ -957,6 +984,21 @@ def create_choropleth_vec_lyr_map(
     else:
         gp_vec_sub = gp_vec
 
+    if clip_vec_bbox:
+        import shapely.geometry
+
+        bbox_poly = shapely.geometry.box(
+            min(bbox[0], bbox[1]),  # min_x
+            min(bbox[2], bbox[3]),  # min_y
+            max(bbox[0], bbox[1]),  # max_x
+            max(bbox[2], bbox[3]),  # max_y
+        )
+
+        clip_poly_gdf = geopandas.GeoDataFrame(
+            [1], geometry=[bbox_poly], crs=gp_vec_sub.crs
+        )
+        gp_vec_sub = gp_vec_sub.clip(clip_poly_gdf)
+
     gp_vec_sub.plot(
         column=vec_col,
         ax=ax,
@@ -970,6 +1012,7 @@ def create_choropleth_vec_lyr_map(
     )
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
+    ax.set_aspect("equal", adjustable="datalim")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -1096,6 +1139,7 @@ def create_raster_cmap_img_map(
     ax.imshow(img_data, extent=img_coords, cmap=c_cmap, norm=c_norm, zorder=plot_zorder)
     ax.set_xlim([img_coords[0], img_coords[1]])
     ax.set_ylim([img_coords[2], img_coords[3]])
+    ax.set_aspect("equal", adjustable="datalim")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -1135,6 +1179,7 @@ def create_vec_pt_density_map(
     use_grid: bool = False,
     show_map_axis: bool = True,
     sub_in_vec: bool = False,
+    clip_vec_bbox: bool = True,
     scale_bar_loc: str = "upper right",
     plot_zorder: float = 1,
 ):
@@ -1182,6 +1227,8 @@ def create_vec_pt_density_map(
                        spatially subset before displaying as for large vector
                        layers this can make the processing much faster.
                        Default: False
+    :param clip_vec_bbox: boolean specifying whether a bbox should be clipped to a
+                          polygon defined by the bbox. Default: True
     :param scale_bar_loc: the location on the plot of the scale bar. Options defined
                           by the matplotlib-scalebar module. But must be one of:
                           upper right, upper left, lower left, lower right, right,
@@ -1207,6 +1254,21 @@ def create_vec_pt_density_map(
     else:
         gp_vec_sub = gp_vec
 
+    if clip_vec_bbox:
+        import shapely.geometry
+
+        bbox_poly = shapely.geometry.box(
+            min(bbox[0], bbox[1]),  # min_x
+            min(bbox[2], bbox[3]),  # min_y
+            max(bbox[0], bbox[1]),  # max_x
+            max(bbox[2], bbox[3]),  # max_y
+        )
+
+        clip_poly_gdf = geopandas.GeoDataFrame(
+            [1], geometry=[bbox_poly], crs=gp_vec_sub.crs
+        )
+        gp_vec_sub = gp_vec_sub.clip(clip_poly_gdf)
+
     c_cmap = plt.get_cmap(cmap_name).copy()
     # Make any values below normalisation transparent so background can be seen.
     matplotlib.colors.Colormap.set_under(c_cmap, color=[1, 1, 1, 0])
@@ -1231,6 +1293,7 @@ def create_vec_pt_density_map(
 
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
+    ax.set_aspect("equal", adjustable="datalim")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
