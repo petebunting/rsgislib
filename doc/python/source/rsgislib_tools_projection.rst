@@ -21,6 +21,7 @@ Conversion
 Numeric Representation
 -----------------------
 .. autofunction:: rsgislib.tools.projection.get_deg_coord_as_str
+.. autofunction:: rsgislib.tools.projection.format_coord_to_dms
 
 
 Calculation
@@ -31,4 +32,3 @@ Calculation
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

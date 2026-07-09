@@ -228,3 +228,33 @@ def great_circle_distance(
     gt_circle_dist = earth_radius * central_angle_radians
 
     return gt_circle_dist
+
+
+def format_coord_to_dms(deg_coord, is_latitude=True):
+    """
+    A function which formats a coordinate (latitude or longitude) to DD°MM'SS"
+
+    :param deg_coord: Coordinate in degrees (WGS84) to be formatted.
+    :param is_latitude: if true then latitude if false the longitude.
+    :return: formatted string with DD°MM'SS"
+    """
+    # Determine the cardinal direction hemisphere
+    if is_latitude:
+        direction = "N" if deg_coord >= 0 else "S"
+    else:
+        direction = "E" if deg_coord >= 0 else "W"
+
+    abs_deg = abs(deg_coord)
+    d = int(abs_deg)
+    m = int((abs_deg - d) * 60)
+    s = round((abs_deg - d - m / 60) * 3600, 2)
+
+    # Handle rounding overflow (e.g., 59.999" -> 60" -> add 1 to minute)
+    if s >= 60:
+        s = 0.0
+        m += 1
+    if m >= 60:
+        m = 0
+        d += 1
+
+    return f"{d}°{m:02d}'{s:05.2f}\"{direction}"
