@@ -54,7 +54,7 @@ def define_axis_extent(ax: plt.axis, bbox: List[float]):
     :param bbox: a bbox (MinX, MaxX, MinY, MaxY) to define the region of interest.
 
     """
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
     ax.ticklabel_format(useOffset=False, style="plain")
@@ -293,7 +293,7 @@ def create_wmts_img_map(
     ax.imshow(img_data, extent=img_coords)
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
 
     if use_grid:
         ax.grid()
@@ -620,7 +620,7 @@ def create_vec_lyr_map(
         )
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -761,7 +761,7 @@ def create_raster_img_map(
     )
     ax.set_xlim([img_coords[0], img_coords[1]])
     ax.set_ylim([img_coords[2], img_coords[3]])
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -875,7 +875,7 @@ def create_thematic_raster_map(
 
     ax.set_xlim([img_coords_scns[0][0], img_coords_scns[0][1]])
     ax.set_ylim([img_coords_scns[0][2], img_coords_scns[0][3]])
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     for img_data_arr, img_coords, plot_zorder in zip(
@@ -1012,7 +1012,7 @@ def create_choropleth_vec_lyr_map(
     )
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -1139,7 +1139,7 @@ def create_raster_cmap_img_map(
     ax.imshow(img_data, extent=img_coords, cmap=c_cmap, norm=c_norm, zorder=plot_zorder)
     ax.set_xlim([img_coords[0], img_coords[1]])
     ax.set_ylim([img_coords[2], img_coords[3]])
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
@@ -1293,7 +1293,7 @@ def create_vec_pt_density_map(
 
     ax.set_xlim([bbox[0], bbox[1]])
     ax.set_ylim([bbox[2], bbox[3]])
-    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_aspect("equal", adjustable="box")
     ax.ticklabel_format(useOffset=False, style="plain")
 
     if use_grid:
