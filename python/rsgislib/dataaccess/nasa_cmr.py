@@ -330,7 +330,11 @@ def get_total_file_size(granule_lst: List[Dict]) -> float:
 
 
 def create_cmr_dwnld_db(
-    db_json: str, granule_lst: List[Dict], dwnld_file_mime_type: str
+    db_json: str,
+    granule_lst: List[Dict],
+    dwnld_file_mime_type: str = None,
+    file_ext: str = None,
+    dwnld_protocol: str = "http",
 ) -> List[str]:
     """
     A function which iterates through a granule list and builds a json database
@@ -344,45 +348,80 @@ def create_cmr_dwnld_db(
 
     :param db_json: The file path for the databases JSON file.
     :param granule_lst: List of granules from find_granules or find_all_granules
-    :param dwnld_file_mime_type: (e.g., application/x-hdfeos, application/x-hdf)
+    :param dwnld_file_mime_type: (e.g., application/x-hdfeos, application/x-hdf) if
+                                 None then no mime type filtering will be applied but
+                                 the file extension is expected to be used instead.
+    :param file_ext: (e.g., .h5, .hdf) if None then no file extension filtering will
+                     be applied and only applied if dwnld_file_mime_type has not
+                     been specified.
+    :param dwnld_protocol: (e.g., http, https, s3) if None then no protocol filtering
+                           will be applied.
     :return: a List of producer_granule_id's for the granules where a
              URL could not be found.
 
     """
     import pysondb
     import tqdm
+    import pprint
+    import os
 
     db_data = []
     granules_no_url = []
     for granule in tqdm.tqdm(granule_lst):
         id_val = granule["id"]
-        producer_granule_id = granule["producer_granule_id"]
-        granule_size = granule["granule_size"]
-        found_url = False
-        for link in granule["links"]:
-            if "type" in link:
-                if link["type"] == dwnld_file_mime_type:
-                    granule_url = link["href"]
-                    found_url = True
-                    break
-        if found_url:
-            db_data.append(
-                {
-                    "id": id_val,
-                    "producer_granule_id": producer_granule_id,
-                    "granule_size": granule_size,
-                    "granule_url": granule_url,
-                    "lcl_path": "",
-                    "downloaded": False,
-                }
-            )
+        if ("producer_granule_id" in granule) or ("title" in granule):
+            if "producer_granule_id" in granule:
+                producer_granule_id = granule["producer_granule_id"]
+            elif "title" in granule:
+                producer_granule_id = granule["title"]
+            else:
+                raise Exception("No producer_granule_id or title found in granule")
+            granule_size = granule["granule_size"]
+            found_url = False
+            for link in granule["links"]:
+                if dwnld_file_mime_type is not None:
+                    if "type" in link:
+                        if link["type"] == dwnld_file_mime_type:
+                            if dwnld_protocol is not None:
+                                if dwnld_protocol in link["href"]:
+                                    granule_url = link["href"]
+                                    found_url = True
+                                    break
+                            else:
+                                granule_url = link["href"]
+                                found_url = True
+                                break
+                elif file_ext is not None:
+                    tmp_file_ext = os.path.splitext(link["href"])[1]
+                    if tmp_file_ext == file_ext:
+                        if dwnld_protocol is not None:
+                            if dwnld_protocol in link["href"]:
+                                granule_url = link["href"]
+                                found_url = True
+                                break
+                        else:
+                            granule_url = link["href"]
+                            found_url = True
+                            break
+            if found_url:
+                db_data.append(
+                    {
+                        "id": id_val,
+                        "producer_granule_id": producer_granule_id,
+                        "granule_size": granule_size,
+                        "granule_url": granule_url,
+                        "lcl_path": "",
+                        "downloaded": False,
+                    }
+                )
+            else:
+                granules_no_url.append(producer_granule_id)
         else:
             granules_no_url.append(producer_granule_id)
 
     lst_db = pysondb.getDb(db_json)
     if len(db_data) > 0:
         lst_db.addMany(db_data)
-
     return granules_no_url
 
 
