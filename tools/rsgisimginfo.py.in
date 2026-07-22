@@ -47,6 +47,8 @@ if __name__ == "__main__":
     print(f"Pixel Size: {img_pxl_res[0]} x {img_pxl_res[1]}")
     img_epsg = rsgislib.imageutils.get_epsg_proj_from_img(args.img)
     print(f"Image EPSG: {img_epsg}")
+    img_bbox = rsgislib.imageutils.get_img_bbox(args.img)
+    print(f"Image BBOX: {img_bbox}")
     n_bands = rsgislib.imageutils.get_img_band_count(args.img)
     print(f"N Bands: {n_bands}")
 
