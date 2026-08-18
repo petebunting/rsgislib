@@ -135,8 +135,8 @@ def get_wmts_as_img(
 
     # Create the output image file.
     if wmts_epsg != bbox_epsg:
-        out_tmp_img = os.path.join(tmp_dir, f"tmp_out_img_{uid_str}.kea")
-        rsgislib.imageutils.gdal_translate(out_sub_tmp_xml, out_tmp_img, "KEA")
+        out_tmp_img = os.path.join(tmp_dir, f"tmp_out_img_{uid_str}.tif")
+        rsgislib.imageutils.gdal_translate(out_sub_tmp_xml, out_tmp_img, "GTIFF")
         rsgislib.imageutils.gdal_warp(
             out_tmp_img,
             output_img,

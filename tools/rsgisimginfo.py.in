@@ -37,7 +37,7 @@ import rsgislib.rastergis
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Print image info to console.")
-    parser.add_argument("-i", "--img", type=str, required=True, help="image file")
+    parser.add_argument("img", help="Path to the input image file")
     args = parser.parse_args()
 
     print(f"Image: {args.img}")
