@@ -6,8 +6,8 @@ Tools for creating vector layers.
 import os
 from typing import Dict, List, Tuple, Union
 
-import tqdm
 from osgeo import gdal, ogr, osr
+import numpy
 
 import rsgislib
 
@@ -1734,3 +1734,112 @@ def create_random_pts_in_bbox(
         data_gdf.to_file(out_vec_file, layer=out_vec_lyr, driver=out_format)
     else:
         data_gdf.to_file(out_vec_file, driver=out_format)
+
+
+def create_binary_random_pt_smpls(
+    input_img: str,
+    n_smpls: int,
+    out_vec_file: str,
+    out_vec_lyr: str,
+    out_format: str = "GPKG",
+    rnd_seed: int = None,
+    img_band: int = 1,
+    pt_name: str = None,
+):
+    """
+    A function which generates a set of random points within a binary mask. The
+    samples are only selected within pixels which have a value of 1.
+
+    :param input_img: Input image path.
+    :param n_smpls: The number of points to be generated - if larger than the
+                    number of pixels (with a value == 1) then all the pixels will
+                    be outputted.
+    :param out_vec_file: Output file name and path
+    :param out_vec_lyr: Output layer name
+    :param out_format: Output vector format. Default: GPKG
+    :param rnd_seed: A random seed for generating the random selection of the points.
+    :param img_band: The band number to be sampled.
+    :param pt_name: If not None then a 'name' column is added to the output vector
+                    and all the points have the value within pt_name (e.g., class
+                    names)
+
+    """
+    import secrets
+    import pandas
+    import geopandas
+    import rsgislib.imageutils
+
+    img_bbox = rsgislib.imageutils.get_img_bbox(input_img)
+    img_min_x = img_bbox[0]
+    img_max_y = img_bbox[3]
+
+    img_res_x, img_res_y = rsgislib.imageutils.get_img_res(input_img, abs_vals=True)
+    x_size, y_size = rsgislib.imageutils.get_img_size(input_img)
+    img_epsg = rsgislib.imageutils.get_epsg_proj_from_img(input_img)
+
+    if rnd_seed is None:
+        rnd_seed = secrets.randbits(128)
+    else:
+        rnd_seed = abs(rnd_seed)
+
+    rng = numpy.random.default_rng(rnd_seed)
+
+    image_ds = gdal.Open(input_img, gdal.GA_ReadOnly)
+    if image_ds is None:
+        raise rsgislib.RSGISPyException(
+            "Could not open the input image file: '{}'".format(input_img)
+        )
+    image_band = image_ds.GetRasterBand(img_band)
+    if image_band is None:
+        raise rsgislib.RSGISPyException("The image band wasn't opened")
+
+    img_data = image_band.ReadAsArray()
+    image_ds = None
+
+    n_out_smpls = n_smpls
+    n_bin_pxls = numpy.sum(img_data == 1)
+    if n_bin_pxls < n_out_smpls:
+        n_out_smpls = n_bin_pxls
+
+    x_coords = img_min_x + (numpy.arange(x_size) + 0.5) * img_res_x
+    y_coords = img_max_y - (numpy.arange(y_size) + 0.5) * img_res_y
+    x_grid, y_grid = numpy.meshgrid(x_coords, y_coords)
+
+    img_data_flat = img_data.flatten()
+    x_grid_flat = x_grid.flatten()
+    y_grid_flat = y_grid.flatten()
+
+    x_grid_flat_mskd = x_grid_flat[img_data_flat == 1]
+    y_grid_flat_mskd = y_grid_flat[img_data_flat == 1]
+
+    if n_out_smpls < x_grid_flat_mskd.shape[0]:
+        indices = rng.choice(len(x_grid_flat_mskd), size=n_out_smpls, replace=False)
+
+        x_coords_arr = x_grid_flat_mskd[indices]
+        y_coords_arr = y_grid_flat_mskd[indices]
+
+    else:
+        x_coords_arr = x_grid_flat_mskd
+        y_coords_arr = y_grid_flat_mskd
+
+    pt_names = list()
+
+    data_dict = dict()
+    data_dict["tmp_x"] = x_coords_arr
+    data_dict["tmp_y"] = y_coords_arr
+    data_df = pandas.DataFrame(data=data_dict)
+
+    pts_gdf = geopandas.GeoDataFrame(
+        data_df,
+        geometry=geopandas.points_from_xy(data_df.tmp_x, data_df.tmp_y),
+        crs=f"EPSG:{img_epsg}",
+    )
+    pts_gdf = pts_gdf.drop(columns=["tmp_x", "tmp_y"])
+    pts_gdf["ID"] = numpy.arange(1, len(pts_gdf) + 1, 1)
+    if pt_name is not None:
+        pts_gdf["name"] = pt_name
+
+    if out_format == "GPKG":
+        pts_gdf.to_file(out_vec_file, layer=out_vec_lyr, driver=out_format)
+    else:
+        pts_gdf.to_file(out_vec_file, driver=out_format)
