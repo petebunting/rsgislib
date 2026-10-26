@@ -54,7 +54,7 @@ def create_stacked_sref_ls_oli_cl2_lv2_img(
     out_dir: str,
     tmp_dir: str,
     scale_factor: int = 10000,
-    gdalformat: str = "KEA",
+    gdalformat: str = "GTIFF",
     delete_inter_data: bool = True,
     inc_full_qa_pxl_img: bool = False,
 ):
@@ -220,7 +220,7 @@ def create_stacked_sref_ls_oli_cl2_lv2_img(
     sref_bands = []
     for i, band in enumerate(band_info):
         out_img_band = os.path.join(
-            tmp_dir, "{}_b{}_sref.kea".format(ls_prod_id, i + 1)
+            tmp_dir, "{}_b{}_sref.tif".format(ls_prod_id, i + 1)
         )
         rsgislib.imagecalc.image_math(
             band["img"],
@@ -228,7 +228,7 @@ def create_stacked_sref_ls_oli_cl2_lv2_img(
             "b1==0?-9999:((b1*{})+{})*{}".format(
                 band["multi"], band["add"], scale_factor
             ),
-            "KEA",
+            "GTIFF",
             rsgislib.TYPE_32INT,
         )
         sref_bands.append(out_img_band)
@@ -249,8 +249,8 @@ def create_stacked_sref_ls_oli_cl2_lv2_img(
         )
         qa_pxl_format = gdalformat
     else:
-        qa_pxl_mband_img = os.path.join(tmp_dir, "{}_pxl_qa.kea".format(ls_prod_id))
-        qa_pxl_format = "KEA"
+        qa_pxl_mband_img = os.path.join(tmp_dir, "{}_pxl_qa.tif".format(ls_prod_id))
+        qa_pxl_format = "GTIFF"
 
     qa_pxl_img_path = os.path.join(raw_dir, qa_pxl_img)
     parse_landsat_c2_qa_pixel_img(qa_pxl_img_path, qa_pxl_mband_img, qa_pxl_format)
@@ -309,7 +309,7 @@ def create_stacked_sref_ls_4_5_7_lv2_img(
     out_dir: str,
     tmp_dir: str,
     scale_factor: int = 10000,
-    gdalformat: str = "KEA",
+    gdalformat: str = "GTIFF",
     delete_inter_data: bool = True,
     inc_full_qa_pxl_img: bool = False,
 ):
@@ -457,7 +457,7 @@ def create_stacked_sref_ls_4_5_7_lv2_img(
     sref_bands = []
     for i, band in enumerate(band_info):
         out_img_band = os.path.join(
-            tmp_dir, "{}_b{}_sref.kea".format(ls_prod_id, i + 1)
+            tmp_dir, "{}_b{}_sref.tif".format(ls_prod_id, i + 1)
         )
         rsgislib.imagecalc.image_math(
             band["img"],
@@ -465,7 +465,7 @@ def create_stacked_sref_ls_4_5_7_lv2_img(
             "b1==0?-9999:((b1*{})+{})*{}".format(
                 band["multi"], band["add"], scale_factor
             ),
-            "KEA",
+            "GTIFF",
             rsgislib.TYPE_32INT,
         )
         sref_bands.append(out_img_band)
@@ -486,8 +486,8 @@ def create_stacked_sref_ls_4_5_7_lv2_img(
         )
         qa_pxl_format = gdalformat
     else:
-        qa_pxl_mband_img = os.path.join(tmp_dir, "{}_pxl_qa.kea".format(ls_prod_id))
-        qa_pxl_format = "KEA"
+        qa_pxl_mband_img = os.path.join(tmp_dir, "{}_pxl_qa.tif".format(ls_prod_id))
+        qa_pxl_format = "GTIFF"
 
     qa_pxl_img_path = os.path.join(raw_dir, qa_pxl_img)
     parse_landsat_c2_qa_pixel_img(qa_pxl_img_path, qa_pxl_mband_img, qa_pxl_format)
@@ -542,7 +542,7 @@ def create_stacked_sref_ls_4_5_7_lv2_img(
 
 
 def parse_landsat_c2_qa_pixel_img(
-    input_img: str, output_img: str, gdalformat: str = "KEA"
+    input_img: str, output_img: str, gdalformat: str = "GTIFF"
 ):
     """
     A function which will parse the bit QA Pixel image from Landsat Collection 2
@@ -572,6 +572,9 @@ def parse_landsat_c2_qa_pixel_img(
 
     import rsgislib.imagecalc
     import rsgislib.imageutils
+
+    if gdalformat == "GTIFF":
+        rsgislib.imageutils.set_env_vars_lzw_gtiff_outs()
 
     unq_img_vals = rsgislib.imagecalc.get_unique_values(input_img, img_band=1)
 
@@ -738,7 +741,7 @@ def create_stacked_sen2_esa_l2a_img(
     out_res_10m: bool = True,
     sharpen_10m: bool = True,
     scale_factor: int = 10000,
-    gdalformat: str = "KEA",
+    gdalformat: str = "GTIFF",
     datatype: int = rsgislib.TYPE_32INT,
     delete_inter_data: bool = True,
     resample_10m_method=rsgislib.INTERP_CUBIC,
@@ -869,14 +872,14 @@ def create_stacked_sen2_esa_l2a_img(
                 comp_imgs_10m_20m[band]
             )
             img_basename_10m = img_basename.replace("20m", "10m")
-            out_10m_img = os.path.join(uid_tmp_dir, f"{img_basename_10m}.kea")
+            out_10m_img = os.path.join(uid_tmp_dir, f"{img_basename_10m}.tif")
             if sharpen_10m:
                 resample_10m_method = rsgislib.INTERP_NEAREST_NEIGHBOUR
             rsgislib.imageutils.resample_img_to_match(
                 ref_img,
                 comp_imgs_10m_20m[band],
                 out_10m_img,
-                gdalformat="KEA",
+                gdalformat="GTIFF",
                 interp_method=resample_10m_method,
                 datatype=rsgislib.TYPE_16UINT,
                 no_data_val=no_data_val,
@@ -896,7 +899,7 @@ def create_stacked_sen2_esa_l2a_img(
         input_imgs.append(imgs_10m["B11"])
         input_imgs.append(imgs_10m["B12"])
 
-        tmp_sref_img = os.path.join(uid_tmp_dir, f"{scn_file_name}_10m_sref.kea")
+        tmp_sref_img = os.path.join(uid_tmp_dir, f"{scn_file_name}_10m_sref.tif")
         out_sref_img = os.path.join(out_dir, f"{scn_file_name}_10m_sref.{out_img_ext}")
         if not update_scale_factor:
             tmp_sref_img = out_sref_img
@@ -1007,12 +1010,12 @@ def create_stacked_sen2_esa_l2a_img(
         ref_img = all_20m_imgs["B02"]
         img_basename = rsgislib.tools.filetools.get_file_basename(imgs_10m["B08"])
         img_basename_20m = img_basename.replace("10m", "20m")
-        out_b08_20m_img = os.path.join(uid_tmp_dir, f"{img_basename_20m}.kea")
+        out_b08_20m_img = os.path.join(uid_tmp_dir, f"{img_basename_20m}.tif")
         rsgislib.imageutils.resample_img_to_match(
             ref_img,
             imgs_10m["B08"],
             out_b08_20m_img,
-            gdalformat="KEA",
+            gdalformat="GTIFF",
             interp_method=resample_20m_method,
             datatype=rsgislib.TYPE_16UINT,
             no_data_val=no_data_val,
@@ -1032,7 +1035,7 @@ def create_stacked_sen2_esa_l2a_img(
         input_imgs.append(all_20m_imgs["B11"])
         input_imgs.append(all_20m_imgs["B12"])
 
-        tmp_sref_img = os.path.join(uid_tmp_dir, f"{scn_file_name}_20m_sref.kea")
+        tmp_sref_img = os.path.join(uid_tmp_dir, f"{scn_file_name}_20m_sref.tif")
         out_sref_img = os.path.join(out_dir, f"{scn_file_name}_20m_sref.{out_img_ext}")
         if not update_scale_factor:
             tmp_sref_img = out_sref_img
